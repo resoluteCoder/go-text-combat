@@ -26,11 +26,6 @@ type Enemy struct {
 	// ItemsDropped    []string
 }
 
-// type Combatant interface {
-// 	takeDamage(int)
-// 	displayStatus()
-// }
-
 type Living struct {
 	entityId       int
 	name           string
