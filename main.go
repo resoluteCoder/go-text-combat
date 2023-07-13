@@ -73,12 +73,46 @@ func NewEnemy(name string) *Enemy {
 	return &enemy
 }
 
+type CombatManager struct {
+	Combatants       []Combatant
+	isCombatFinished bool
+	isPlayerTurn     bool
+	currentIndex     int
+}
+
+func (combatManager CombatManager) PrintPlayerMenu() {
+}
+
+func (combatManager CombatManager) GetInputFromPlayer(inputText string) {
+	fmt.Println(inputText)
+	// STOPPED HERE
+	// reader := bufio.NewReader(os.Stdin)
+	// input, err := reader.ReadString('\n')
+	// if err != nil {
+	// 	fmt.Println(err)
+	// }
+
+}
+
 func main() {
 	player := NewPlayer("Chris")
 	giant := NewEnemy("Giant")
 	skeleton := NewEnemy("Skeleton")
 
 	combatants := []Combatant{player, giant, skeleton}
+
+	combatManager := CombatManager{
+		Combatants:       combatants,
+		isCombatFinished: false,
+		isPlayerTurn:     true,
+		currentIndex:     0,
+	}
+
+	for !combatManager.isCombatFinished {
+		if combatManager.isPlayerTurn {
+			combatManager.PrintPlayerMenu()
+		}
+	}
 
 	for _, combatant := range combatants {
 		switch combatant.(type) {
