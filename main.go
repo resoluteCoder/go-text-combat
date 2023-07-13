@@ -4,9 +4,11 @@ import (
 	"bufio"
 	"fmt"
 	"math"
+	"math/rand"
 	"os"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type Player struct {
@@ -24,10 +26,10 @@ type Enemy struct {
 	// ItemsDropped    []string
 }
 
-type Combatant interface {
-	takeDamage(int)
-	displayStatus()
-}
+// type Combatant interface {
+// 	takeDamage(int)
+// 	displayStatus()
+// }
 
 type Living struct {
 	entityId       int
@@ -37,12 +39,12 @@ type Living struct {
 	physicalArmor  int
 }
 
-func (living *Living) TakeDamage(damage int) {
+func (living *Living) takeDamage(damage int) {
 	totalDamage := living.physicalArmor - damage
 	living.health -= int(math.Abs(float64(totalDamage)))
 }
 
-func (living *Living) DisplayStatus() {
+func (living *Living) displayStatus() {
 	fmt.Printf("%s is at %d health.\n", living.name, living.health)
 }
 
@@ -50,9 +52,9 @@ func NewPlayer(name string) *Player {
 	playerStats := Living{
 		entityId:       0,
 		name:           name,
-		health:         100,
-		physicalAttack: 10,
-		physicalArmor:  5,
+		health:         50,
+		physicalAttack: 25,
+		physicalArmor:  10,
 	}
 	player := Player{
 		playerStats,
@@ -62,11 +64,11 @@ func NewPlayer(name string) *Player {
 
 func NewEnemy(name string) *Enemy {
 	enemyStats := Living{
-		entityId:       1,
+		entityId:       rand.Int() + 1,
 		name:           name,
-		health:         100,
-		physicalAttack: 5,
-		physicalArmor:  1,
+		health:         25,
+		physicalAttack: 15,
+		physicalArmor:  5,
 	}
 	enemy := Enemy{
 		enemyStats,
@@ -76,10 +78,9 @@ func NewEnemy(name string) *Enemy {
 
 type CombatManager struct {
 	enemies          []*Enemy
-	player           Player
+	player           *Player
 	isCombatFinished bool
 	isPlayerTurn     bool
-	currentIndex     int
 }
 
 func (combatManager CombatManager) printPlayerMenu() {
@@ -92,7 +93,7 @@ func (combatManager CombatManager) printPlayerMenu() {
 func (combatManager CombatManager) printAttackMenu() {
 	fmt.Println("Which target?")
 	for index, enemy := range combatManager.enemies {
-		fmt.Printf("%d) %s\n", index+1, enemy.name)
+		fmt.Printf("%d) %s - %d HP\n", index+1, enemy.name, enemy.health)
 	}
 }
 
@@ -110,16 +111,38 @@ func (combatManager CombatManager) getInputFromPlayer() (string, error) {
 func (combatManager *CombatManager) handlePlayerAttack(targetIndex string) {
 	index, _ := strconv.ParseInt(targetIndex, 10, 16)
 	enemy := combatManager.enemies[index-1]
-	enemy.TakeDamage(combatManager.player.physicalAttack)
-	enemy.DisplayStatus()
+	enemy.takeDamage(combatManager.player.physicalAttack)
+	fmt.Printf("%s attacks %s for %d damage\n", combatManager.player.name, enemy.name, enemy.physicalAttack)
+
+	if enemy.health <= 0 {
+		fmt.Printf("%s has been defeated!\n", enemy.name)
+		combatManager.enemies = combatManager.removeDefeatedEnemy(enemy)
+	} else {
+		enemy.displayStatus()
+	}
+
 	combatManager.isPlayerTurn = false
 }
 
 func (combatManager *CombatManager) handleEnemyAttack() {
 	for _, enemy := range combatManager.enemies {
-		fmt.Println(enemy.name)
+		time.Sleep(1 * time.Second)
+		combatManager.player.takeDamage(enemy.physicalAttack)
+
+		fmt.Printf("%s attacks %s for %d damage\n", enemy.name, combatManager.player.name, enemy.physicalAttack)
+		combatManager.player.displayStatus()
 	}
 	combatManager.isPlayerTurn = true
+}
+
+func (combatManager *CombatManager) removeDefeatedEnemy(enemy *Enemy) []*Enemy {
+	remainingEnemies := []*Enemy{}
+	for _, e := range combatManager.enemies {
+		if enemy.entityId != e.entityId {
+			remainingEnemies = append(remainingEnemies, e)
+		}
+	}
+	return remainingEnemies
 }
 
 func main() {
@@ -131,12 +154,11 @@ func main() {
 
 	combatManager := CombatManager{
 		enemies:      enemies,
-		player:       *player,
+		player:       player,
 		isPlayerTurn: true,
-		currentIndex: 0,
 	}
 
-	for len(combatManager.enemies) != 0 {
+	for len(combatManager.enemies) != 0 || combatManager.player.health <= 0 {
 		if combatManager.isPlayerTurn {
 			combatManager.printPlayerMenu()
 			input, _ := combatManager.getInputFromPlayer()
@@ -149,4 +171,5 @@ func main() {
 			combatManager.handleEnemyAttack()
 		}
 	}
+	fmt.Println("Combat is finished!")
 }
